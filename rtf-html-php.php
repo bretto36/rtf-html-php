@@ -670,6 +670,7 @@
       for ($i=1;$i<$c;$i++){
         $fname = '';
         $fN = null;
+        if (isset($fontTblGrp[$i]->children)) {
         foreach ($fontTblGrp[$i]->children as $child){
           
           if ($child instanceof RtfControlWord){
@@ -717,6 +718,7 @@
             continue;
           }        
         }
+	}
         // Remove end ; delimiter from font name
         $fonttbl[$fN]->fontname = substr($fname,0,-1);
         
