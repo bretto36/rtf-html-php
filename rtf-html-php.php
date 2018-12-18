@@ -718,12 +718,12 @@
             continue;
           }        
         }
-	}
         // Remove end ; delimiter from font name
         $fonttbl[$fN]->fontname = substr($fname,0,-1);
         
         // Save extracted Font
         RtfState::$fonttbl = $fonttbl;
+	}
       }      
     }
     
