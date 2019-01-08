@@ -608,7 +608,7 @@
       if (isset($this->font)) {
         if (!isset($state->font))
           return False;
-        elseif (  self::$fonttbl[$this->font]->fontfamily != 
+        elseif (  !isset(self::$fonttbl[$this->font]) || !isset(self::$fonttbl[$state->font]) || self::$fonttbl[$this->font]->fontfamily != 
                   self::$fonttbl[$state->font]->fontfamily)
           return False;        
       } elseif (isset($state->font))
