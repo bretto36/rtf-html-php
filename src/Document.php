@@ -84,9 +84,9 @@ class Document
 
     // Is there a current group? Then make the new group its child:
     if($this->group != null) {
-      $group->parent = $this->group;
-      array_push($this->group->children, $group);
-      array_push($this->uc, end($this->uc));
+      $group->parent           = $this->group;
+      $this->group->children[] = $group;
+      $this->uc[]              = end($this->uc);
     } 
     // If there is no parent group, then set this group
     // as the root group.
@@ -165,7 +165,7 @@ class Document
             $this->pos = $this->pos + 3;
         
         // Break if it's an RTF scope delimiter
-        elseif ($this->char == '{' || $this->char == '{')
+        elseif ($this->char == '{')
           break;
         
         // - To include an RTF delimiter in skippable data, it must be
@@ -184,7 +184,7 @@ class Document
     $rtfword = new ControlWord();
     $rtfword->word = $word;
     $rtfword->parameter = $parameter;
-    array_push($this->group->children, $rtfword);
+    $this->group->children[] = $rtfword;
   }
 
   protected function ParseControlSymbol()
@@ -199,7 +199,7 @@ class Document
       $rtfword = new ControlWord();
       $rtfword->word = 'par';
       $rtfword->parameter = 0;
-      array_push($this->group->children, $rtfword);
+      $this->group->children[] = $rtfword;
       return;
     }    
 
@@ -218,7 +218,7 @@ class Document
     $rtfsymbol = new ControlSymbol();
     $rtfsymbol->symbol = $symbol;
     $rtfsymbol->parameter = $parameter;
-    array_push($this->group->children, $rtfsymbol);
+    $this->group->children[] = $rtfsymbol;
   }
 
   protected function ParseControl()
@@ -289,7 +289,7 @@ class Document
     }
 
     // Add text as a child to the current group:
-    array_push($this->group->children, $text);
+    $this->group->children[] = $text;
   }
 
   /*

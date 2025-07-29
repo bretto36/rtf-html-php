@@ -13,7 +13,8 @@ class State
   private $background;
   private $hcolor;
   private $font;
-  
+  public $href;
+
   public static $fonttbl = array();
   public static $colortbl = array();
   private static $highlight = array(
@@ -59,7 +60,7 @@ class State
     $this->fontcolor = null;
     $this->background = null;
     $this->hcolor = null;
-    $this->font = isset($defaultFont) ? $defaultFont : null;
+    $this->font = $defaultFont ?? null;
     $this->href = null;
   }
   

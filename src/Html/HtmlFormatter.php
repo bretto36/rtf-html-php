@@ -2,7 +2,11 @@
 
 namespace RtfHtmlPhp\Html;
 
+use RtfHtmlPhp\ControlSymbol;
+use RtfHtmlPhp\ControlWord;
 use RtfHtmlPhp\Document;
+use RtfHtmlPhp\Group;
+use RtfHtmlPhp\Text;
 
 class HtmlFormatter
 {
@@ -50,8 +54,8 @@ class HtmlFormatter
     // and create a stack of states
     $this->states = array();
     // Put an initial standard state onto the stack
-    $this->state = new State();
-    array_push($this->states, $this->state);
+    $this->state    = new State();
+    $this->states[] = $this->state;
 
     // Keep track of opened html tags
     $this->openedTags = array('span' => false, 'p' => false, 'a' => false);
@@ -68,7 +72,7 @@ class HtmlFormatter
 
   }
 
-  protected function LoadFont(\RtfHtmlPhp\Group $fontGroup) {
+  protected function LoadFont(Group $fontGroup) {
     $fontNumber = 0;
     $font = new Font();
 
@@ -78,7 +82,7 @@ class HtmlFormatter
     foreach($fontGroup->children as $child) {
 
       // Control word
-      if ($child instanceof \RtfHtmlPhp\ControlWord){
+      if ($child instanceof ControlWord){
         switch ($child->word) {
           case 'f':
             $fontNumber = $child->parameter;
@@ -108,7 +112,7 @@ class HtmlFormatter
       }
 
       // Control text contains the font name, if any:
-      if ($child instanceof \RtfHtmlPhp\Text) {
+      if ($child instanceof Text) {
         // Store font name (except ; delimiter at end)
         $font->name = substr($child->text, 0, -1);
       }
@@ -143,7 +147,7 @@ class HtmlFormatter
     // identifier.
     foreach($fontTblGrp->children as $child) {
       // Ignore non-group, which should be the fonttbl identified word.
-      if(!($child instanceof \RtfHtmlPhp\Group)) continue;
+      if(!($child instanceof Group)) continue;
       // Load the font specification in the subgroup:
       $this->LoadFont($child);
     }
@@ -156,14 +160,14 @@ class HtmlFormatter
     $c = count($colorTblGrp);
     $color = '';
     for ($i=1; $i<$c; $i++) { // Iterate through colors
-      if($colorTblGrp[$i] instanceof \RtfHtmlPhp\ControlWord) {
+      if($colorTblGrp[$i] instanceof ControlWord) {
         // Extract RGB color and convert it to hex string
         $color = sprintf('#%02x%02x%02x', // hex string format
                             $colorTblGrp[$i]->parameter, // red
                             $colorTblGrp[$i+1]->parameter, // green
                             $colorTblGrp[$i+2]->parameter); // blue
         $i+=2;
-      } elseif($colorTblGrp[$i] instanceof \RtfHtmlPhp\Text) {
+      } elseif($colorTblGrp[$i] instanceof Text) {
         // This is a delimiter ';' so
         if ($i != 1) { // Store the already extracted color
           $colortbl[] = $color;
@@ -179,7 +183,7 @@ class HtmlFormatter
   {
     $Image = new Image();
     foreach ($pictGrp as $child) {
-      if ($child instanceof \RtfHtmlPhp\ControlWord) {
+      if ($child instanceof ControlWord) {
         switch ($child->word) {
           // Picture Format
           case "emfblip": $Image->format = 'emf'; break;
@@ -201,7 +205,7 @@ class HtmlFormatter
           default: break;
         }
 
-      } elseif ($child instanceof \RtfHtmlPhp\Text) { // store Data
+      } elseif ($child instanceof Text) { // store Data
         $Image->ImageData = $child->text;
       }
     }
@@ -247,8 +251,8 @@ class HtmlFormatter
     }
 
     // Push a new state onto the stack:
-    $this->state = clone $this->state;
-    array_push($this->states, $this->state);
+    $this->state    = clone $this->state;
+    $this->states[] = $this->state;
 
     foreach($group->children as $child) {
       $this->FormatEntry($child);
@@ -261,14 +265,14 @@ class HtmlFormatter
 
   protected function ProcessDestination($dest)
   {
-    if (!$dest[1] instanceof \RtfHtmlPhp\ControlWord) return;
+    if (!$dest[1] instanceof ControlWord) return;
     // Check if this is a Word 97 picture
     if ($dest[1]->word == "shppict") {
       $c = count($dest);
       for ($i=2;$i<$c;$i++)
         $this->FormatEntry($dest[$i]);
       }
-    if ($dest[1]->word == "fldinst" && count($dest)>=2 && substr($dest[2]->text,0,10)=="HYPERLINK " ) {
+    if ($dest[1]->word == "fldinst" && count($dest)>=2 && str_starts_with($dest[2]->text, "HYPERLINK ")) {
       $url=substr($dest[2]->text,10);
       $this->state->href=$url;
     }
@@ -276,10 +280,10 @@ class HtmlFormatter
 
   protected function FormatEntry($entry)
   {
-    if($entry instanceof \RtfHtmlPhp\Group) $this->ProcessGroup($entry);
-    elseif($entry instanceof \RtfHtmlPhp\ControlWord) $this->FormatControlWord($entry);
-    elseif($entry instanceof \RtfHtmlPhp\ControlSymbol) $this->FormatControlSymbol($entry);
-    elseif($entry instanceof \RtfHtmlPhp\Text) $this->FormatText($entry);
+    if($entry instanceof Group) $this->ProcessGroup($entry);
+    elseif($entry instanceof ControlWord) $this->FormatControlWord($entry);
+    elseif($entry instanceof ControlSymbol) $this->FormatControlSymbol($entry);
+    elseif($entry instanceof Text) $this->FormatText($entry);
   }
 
   protected function FormatControlWord($word)
@@ -401,7 +405,7 @@ class HtmlFormatter
       return $utf8 ? "&#{$this->ord_utf8($utf8)};" : "&#{$code};";
 
     } elseif ($this->encoding == 'UTF-8') {
-      return $utf8 ? $utf8 : mb_convert_encoding("&#{$code};", $this->encoding, 'HTML-ENTITIES');
+      return $utf8 ?: mb_convert_encoding("&#{$code};", $this->encoding, 'HTML-ENTITIES');
 
     } else {
       return $utf8 ? mb_convert_encoding($utf8, $this->encoding, 'UTF-8') :
@@ -443,16 +447,11 @@ class HtmlFormatter
   {
     if ($this->openedTags[$tag]) {
       // Check for empty html elements
-      if (substr($this->output ,-strlen("<{$tag}>")) == "<{$tag}>"){
-        switch ($tag)
-        {
-          case 'p': // Replace empty 'p' element with a line break
-            $this->output = substr($this->output ,0, -3) . "<br>";
-            break;
-          default: // Delete empty elements
-            $this->output = substr($this->output ,0, -strlen("<{$tag}>"));
-            break;
-        }
+      if (str_ends_with($this->output, "<{$tag}>")){
+          $this->output = match ($tag) {
+              'p'     => substr($this->output, 0, -3) . "<br>",
+              default => substr($this->output, 0, -strlen("<{$tag}>")),
+          };
       } else {
         $this->output .= "</{$tag}>";
       }
@@ -460,7 +459,7 @@ class HtmlFormatter
     }
   }
 
-  protected function CloseTags()
+  protected function CloseTags(): void
   {
     // Close all opened tags but p
     foreach ($this->openedTags as $tag => $b)
@@ -469,7 +468,7 @@ class HtmlFormatter
     if ($this->openedTags['p']) $this->CloseTag('p');
   }
 
-  protected function FormatControlSymbol($symbol)
+  protected function FormatControlSymbol($symbol): void
   {
     if($symbol->symbol == '\'') {
       $enc = $this->GetSourceEncoding();
@@ -484,7 +483,7 @@ class HtmlFormatter
     }
   }
 
-  protected function FormatText($text)
+  protected function FormatText($text): void
   {
     // Convert special characters to HTML entities
     $txt = htmlspecialchars($text->text, ENT_NOQUOTES, 'UTF-8');
