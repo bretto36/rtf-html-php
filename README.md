@@ -1,5 +1,6 @@
 # rtf-html-php
-RTF to HTML converter in PHP
+
+_An RTF to HTML converter in PHP_
 
 In a recent project, I desperately needed an RTF to HTML converter written in PHP. Googling around turned up some matches, but I could not get them to work properly. Also, one of them called `passthru()` to use a RTF2HTML executable, which is something I didn’t want. I was looking for an RTF to HTML converter written purely in PHP.
 
@@ -7,30 +8,40 @@ Since I couldn’t find anything ready-made, I sat down and coded one up myself.
 
 ## How to use it
 
-Include the file rtf-html-php.php somewhere in your project. Then do this:
+Install this package using composer. Then do this:
 
-    $reader = new RtfReader();
-    $rtf = file_get_contents("test.rtf"); // or use a string
-    $result = $reader->Parse($rtf);
-    
-The parser will return TRUE if the RTF was parsed successfully, or FALSE if the RTF was malformed.
+```php
+use RtfHtmlPhp\Document;
 
-If you’d like to see what the parser read (for debug purposes), then call this (but only if the RTF was successfully parsed):
+$rtf = file_get_contents("test.rtf"); 
+$document = new Document($rtf); // or use a string directly
+```
 
-    $reader->root->dump();
+`Document` will raise an exception if the RTF document could not be parsed. Parse errors will generate PHP notices.
+
+If you’d like to see what the parser read (for debug purposes), then call this:
+
+```php
+echo $document;
+```
 
 To convert the parser’s parse tree to HTML, call this (but only if the RTF was successfully parsed):
 
-    $formatter = new RtfHtml();
-    echo $formatter->Format($reader->root);
+```php
+use RtfHtmlPhp\Html\HtmlFormatter;
+$formatter = new HtmlFormatter();
+echo $formatter->Format($document);
+```
 
-For enhanced compatibility the default character encoding of the converted RTF unicode characters is set to `HTML-ENTITIES`. To change the default encoding, you can initialize the RtfHtml object with the desired encoding supported by `mb_list_encodings()`: ex. `UTF-8`
+For enhanced compatibility the default character encoding of the converted RTF unicode characters is set to `HTML-ENTITIES`. To change the default encoding, you can initialize the `Html` object with the desired encoding supported by `mb_list_encodings()`: ex. `UTF-8`
 
-    $formatter = new RtfHtml('UTF-8');
+```php
+$formatter = new HtmlFormatter('UTF-8');
+```
 
 ## Install via Composer
 
-```
+```shell
 composer require henck/rtf-to-html
 ```
 
@@ -38,41 +49,6 @@ composer require henck/rtf-to-html
 
 * Please note that rtf-html-php requires your PHP installation to support the `mb_convert_encoding` function. Therefore you must have the `php-mbstring` module installed. For fresh PHP installations, it will usually be there.
 
+## License
 
-## History
-
-#### Update 26 Oct '18:
-
-* Adds support for Font table extraction.
-* Adds support for Pictures.
-* Adds support for additional control symbols.
-* Updates the way the parser parses unicode and its replacement character(s).
-* Updated Html formatter: now it reads the proper encoding from RTF document and/or from current font.
-* Updated unicode conversion method: now it takes into account the right encoding of the Rtf document.
-
-#### Update 2 Sep '18:
-
-* Unicode characters are now fully supported
-* Font color & background are now supported
-* Better HTML tag handling
-
-#### Update 11 Jun '18:
-
-* Better display for text with altered font-size 
-
-#### Update 10 Mar '16:
-
-* The RTF parser would either issue warnings or go into an infinite loop when parsing a malformed RTF. Instead, it now returns TRUE when parsing was successful, and FALSE if it was not.
-
-#### Update 23 Feb '16:
-
-* The RTF to HTML converter can now be installed through Composer (thanks to felixkiss).
-
-#### Update 28 Oct '15:
-
-* A bug causing control words to be misparsed occasionally is now fixed.
-
-#### Update 3 Sep ’14:
-
-* Fixed bug: underlining would start but never end. Now it does.
-* Feature request: images are now filtered out of the output.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
